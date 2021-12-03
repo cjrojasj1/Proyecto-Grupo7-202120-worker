@@ -12,6 +12,8 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from ..modelos import db, TareaConversion, EstadoProcesoConversion, Usuario
 from email.mime.application import MIMEApplication
+import boto3
+import botocore
 
 environment_vars = os.environ
 
@@ -24,6 +26,9 @@ celery = Celery(__name__, broker=environment_vars['CONV_BROKER'])
 
 ## Para escritura de mensajes en el log
 logger = get_task_logger(__name__)
+
+boto3_session = boto3.Session(aws_access_key_id=environment_vars['AWS_ACCESS_KEY_ID'],
+aws_secret_access_key=environment_vars['AWS_SECRET_ACCESS_KEY'])
 
 @celery.task(name='registrar_tarea')
 def registrar_tarea(id_task):
@@ -50,24 +55,19 @@ def registrar_tarea(id_task):
         try:
             
             # Se determinan las rutas de los archivos
-            archivo_origen = "/".join([environment_vars['CONV_UPLOAD_FOLDER'], tarea.nombre_archivo])
-            if os.path.isfile(archivo_origen) == False:
+            try:
+                archivo_origen = tarea.nombre_archivo
+                s3.Object(environment_vars['S3_BUCKET_NAME'], environment_vars['S3_UPLOAD_PREFIX'] + archivo_origen ).load()
+                s3.download_file(environment_vars['S3_BUCKET_NAME'], environment_vars['S3_UPLOAD_PREFIX'] + archivo_origen, archivo_origen)
+            except botocore.exceptions.ClientError as e:
                 error_conversion = True
                 mensaje_error_conversion = '¡ El archivo de audio origen no existe ! Se detiene el procesamiento'
 
-            archivo_destino = "/".join([environment_vars['CONV_PROCESSED_FOLDER'], 
-               ".".join(['{}-{}'.format(tarea.nombre_archivo.rsplit('.')[0], id_task),
-               tarea.extension_conversion])])
-            
+            archivo_destino = '{}-{}.{}'.format(archivo_origen.rsplit('.')[0], id_task, tarea.extension_conversion)
+
             # Se ejecuta el proceso de conversión
             ffmpeg.input(archivo_origen).output(archivo_destino).global_args('-loglevel', environment_vars['CONV_FFMPEG_LOG_LEVEL']).global_args('-y').run()
             
-
-            # Se elimina copia temporal del archivo a convertir generado en el directorio destino
-            copia_archivo_origen = "/".join([environment_vars['CONV_PROCESSED_FOLDER'], tarea.nombre_archivo])
-            if os.path.isfile(copia_archivo_origen) == True:
-                remove(copia_archivo_origen)
-
             logger.info('Conversión realizada exitosamente')
         
         except Exception as ex:
