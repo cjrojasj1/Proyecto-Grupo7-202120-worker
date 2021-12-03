@@ -1,6 +1,5 @@
 aniso8601==9.0.1
 celery==5.1.2
-click==8.0.1
 colorama==0.4.4
 coverage==5.5
 Flask==1.1.2
