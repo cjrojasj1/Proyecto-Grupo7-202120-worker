@@ -59,8 +59,7 @@ def registrar_tarea(id_task):
             # Se determinan las rutas de los archivos
             try:
                 archivo_origen = tarea.nombre_archivo
-                s3.Object(environment_vars['S3_BUCKET_NAME'], environment_vars['S3_UPLOAD_PREFIX'] + archivo_origen ).load()
-                s3.download_file(environment_vars['S3_BUCKET_NAME'], environment_vars['S3_UPLOAD_PREFIX'] + archivo_origen, archivo_origen)
+                s3.Bucket(environment_vars['S3_BUCKET_NAME']).download_file(environment_vars['S3_UPLOAD_PREFIX'] + archivo_origen, archivo_origen)
             except botocore.exceptions.ClientError as e:
                 error_conversion = True
                 mensaje_error_conversion = '¡ El archivo de audio origen no existe ! Se detiene el procesamiento'
