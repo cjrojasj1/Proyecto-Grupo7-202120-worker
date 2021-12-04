@@ -68,6 +68,8 @@ def registrar_tarea(id_task):
 
             # Se ejecuta el proceso de conversión
             ffmpeg.input(archivo_origen).output(archivo_destino).global_args('-loglevel', environment_vars['CONV_FFMPEG_LOG_LEVEL']).global_args('-y').run()
+
+            s3.Bucket(environment_vars['S3_BUCKET_NAME']).upload_file(archivo_destino, environment_vars['S3_PROCESSED_PREFIX'] + archivo_destino)
             
             logger.info('Conversión realizada exitosamente')
         
