@@ -30,6 +30,8 @@ logger = get_task_logger(__name__)
 boto3_session = boto3.Session(aws_access_key_id=environment_vars['AWS_ACCESS_KEY_ID'],
 aws_secret_access_key=environment_vars['AWS_SECRET_ACCESS_KEY'])
 
+s3 = boto3_session.resource('s3')
+
 @celery.task(name='registrar_tarea')
 def registrar_tarea(id_task):
     
