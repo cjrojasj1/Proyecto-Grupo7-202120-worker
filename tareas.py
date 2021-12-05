@@ -1,3 +1,5 @@
+import scout_apm.celery
+from scout_apm.api import Config
 import ffmpeg
 import datetime
 import pytz
@@ -31,6 +33,11 @@ boto3_session = boto3.Session(aws_access_key_id=environment_vars['AWS_ACCESS_KEY
 aws_secret_access_key=environment_vars['AWS_SECRET_ACCESS_KEY'])
 
 s3 = boto3_session.resource('s3')
+
+Config.set(
+    errors_enabled=True
+) 
+scout_apm.celery.install(celery)
 
 @celery.task(name='registrar_tarea')
 def registrar_tarea(id_task):
